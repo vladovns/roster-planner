@@ -722,7 +722,7 @@ export default function App() {
         if (!workedToday.has(m.id) && m.maxDaysOff) {
           const maxOff = parseInt(m.maxDaysOff, 10);
           if (!isNaN(maxOff)) {
-            const minWorkDays = daysCount - maxOff;
+            const minWorkDays = Math.ceil((daysCount - maxOff) * (getEmploymentPercentage(m) / 100));
             const remainingDays = daysCount - d + 1;
             const daysLeftToWork = minWorkDays - (daysWorkedThisMonth[m.id] || 0);
 
