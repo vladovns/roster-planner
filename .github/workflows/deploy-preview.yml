@@ -1,0 +1,56 @@
+name: ChatGPT Vercel Preview
+
+on:
+  push:
+    branches:
+      - chatgpt
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  deploy-preview:
+    name: Build and deploy preview
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify production build
+        run: npm run build
+
+      - name: Deploy preview to Vercel
+        id: vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-comment: false
+          github-deployment: true
+
+      - name: Publish preview URL
+        if: always()
+        env:
+          PREVIEW_URL: ${{ steps.vercel.outputs.preview-url }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          if [ -n "$PREVIEW_URL" ]; then
+            echo "### ChatGPT Vercel preview" >> "$GITHUB_STEP_SUMMARY"
+            echo "$PREVIEW_URL" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### ChatGPT Vercel preview" >> "$GITHUB_STEP_SUMMARY"
+            echo "No preview URL was returned. Check the deployment step logs and the VERCEL_TOKEN, VERCEL_ORG_ID, and VERCEL_PROJECT_ID repository secrets." >> "$GITHUB_STEP_SUMMARY"
+          fi
