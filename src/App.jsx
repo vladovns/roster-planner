@@ -11,7 +11,7 @@ const translations = {
   en: {
     app_title: "Team Roster Planner",
     monthly_roster: "Monthly Roster", manage_team: "Manage Team", manage_shifts: "Manage Shifts", roles_rules: "Roles & Rules", leaves_holidays: "Leaves & Holidays",
-    team_members: "Team Members", add_remove_personnel: "Add or remove personnel from your roster pool.", full_name: "Full Name", role: "Role", birthday: "Birthday", add: "Add", no_team_members: "No team members added yet.",
+    team_members: "Team Members", add_remove_personnel: "Add or remove personnel from your roster pool.", full_name: "Full Name", role: "Role", birthday: "Birthday", employment_percentage: "Employment contract (%)", employment_percentage_short: "Employment", add: "Add", no_team_members: "No team members added yet.",
     shift_types: "Shift Types", define_working_periods: "Define the working periods and targets.", shift_name: "Shift Name", time_example: "Time (e.g. 08:00 - 16:00)", shift_color: "Shift Color", no_shifts: "No shifts defined yet.",
     create_roles: "Create Role", roles_and_rules: "Roles & Assignment Rules", define_roles: "Create team roles and assign smart shift priorities or exclusions.", role_name: "Role Name", priority_target: "Priority Target", flexible: "Flexible (No Preference)", mainly: "Mainly (Prioritize a shift)", only: "Only (Exclusive to one shift)", preferred_shift: "Preferred Shift", hard_exclusions: "Hard Exclusions (Never assign to these shifts):", fixed_days_off: "Fixed Days Off (Always off on these days):", no_roles: "No roles defined.", assignment_rule: "Assignment Rule", exclusions: "Exclusions", add_roles_first: "Add Roles First", priority: "Priority", shift_priority_hint: "Lower number = filled first (1 = highest priority)",
     book_holidays: "Book holidays, sick days, and wish days for staff.", start_date: "Start Date", end_date: "End Date", book: "Book", no_time_off: "No time off booked yet.", holiday: "Holiday", sick_day: "Sick Day", wish_day: "Wish Day", conflict: "Conflict",
@@ -25,7 +25,7 @@ const translations = {
   de: {
     app_title: "Dienstplaner",
     monthly_roster: "Monatsplan", manage_team: "Team verwalten", manage_shifts: "Schichten verwalten", roles_rules: "Rollen & Regeln", leaves_holidays: "Urlaub & Abwesenheit",
-    team_members: "Teammitglieder", add_remove_personnel: "Personal zum Dienstplan hinzufügen oder entfernen.", full_name: "Vollständiger Name", role: "Rolle", birthday: "Geburtstag", add: "Hinzufügen", no_team_members: "Noch keine Teammitglieder hinzugefügt.",
+    team_members: "Teammitglieder", add_remove_personnel: "Personal zum Dienstplan hinzufügen oder entfernen.", full_name: "Vollständiger Name", role: "Rolle", birthday: "Geburtstag", employment_percentage: "Beschäftigungsgrad (%)", employment_percentage_short: "Pensum", add: "Hinzufügen", no_team_members: "Noch keine Teammitglieder hinzugefügt.",
     shift_types: "Schichtarten", define_working_periods: "Arbeitszeiten und Ziele definieren.", shift_name: "Schichtname", time_example: "Zeit (z.B. 08:00 - 16:00)", shift_color: "Schichtfarbe", no_shifts: "Noch keine Schichten definiert.",
     create_roles: "Rolle erstellen", roles_and_rules: "Rollen & Zuweisungsregeln", define_roles: "Teamrollen erstellen und Schichtprioritäten oder Ausschlüsse festlegen.", role_name: "Rollenname", priority_target: "Prioritätsziel", flexible: "Flexibel (Keine Präferenz)", mainly: "Hauptsächlich (Schicht priorisieren)", only: "Nur (Exklusiv für eine Schicht)", preferred_shift: "Bevorzugte Schicht", hard_exclusions: "Strikte Ausschlüsse (Nie für diese Schichten einteilen):", fixed_days_off: "Feste freie Tage (An diesen Tagen immer frei):", no_roles: "Keine Rollen definiert.", assignment_rule: "Zuweisungsregel", exclusions: "Ausschlüsse", add_roles_first: "Zuerst Rollen hinzufügen", priority: "Priorität", shift_priority_hint: "Niedrigere Zahl = zuerst besetzt (1 = höchste Priorität)",
     book_holidays: "Urlaub, Krankheitstage und Wunschtage buchen.", start_date: "Startdatum", end_date: "Enddatum", book: "Buchen", no_time_off: "Noch keine Abwesenheiten gebucht.", holiday: "Urlaub", sick_day: "Krankheitstag", wish_day: "Wunschtag", conflict: "Konflikt",
@@ -48,6 +48,11 @@ function getDayOfWeekShort(year, month, day, lang = 'en') { return new Date(year
 function pad(n) { return n.toString().padStart(2, '0'); }
 function getDateKey(year, month, day) { return `${year}-${pad(month + 1)}-${pad(day)}`; }
 function getRandomHex() { return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'); }
+
+function getEmploymentPercentage(member) {
+  const value = Number(member?.employmentPercentage);
+  return Number.isFinite(value) && value >= 1 && value <= 100 ? value : 100;
+}
 
 function formatDateDDMMYYYY(dateInput) {
   if (!dateInput) return '';
@@ -253,6 +258,10 @@ export default function App() {
     const role = formData.get('role');
     const birthday = formData.get('birthday');
     const maxDaysOff = formData.get('maxDaysOff');
+    const rawEmploymentPercentage = Number.parseInt(formData.get('employmentPercentage'), 10);
+    const employmentPercentage = Number.isFinite(rawEmploymentPercentage)
+      ? Math.min(100, Math.max(1, rawEmploymentPercentage))
+      : 100;
     
     if (!name) return;
 
@@ -264,7 +273,7 @@ export default function App() {
     ];
     const color = colors[members.length % colors.length];
 
-    setMembers([...members, { id: Date.now().toString(), name, role, color, birthday, maxDaysOff }]);
+    setMembers([...members, { id: Date.now().toString(), name, role, color, birthday, maxDaysOff, employmentPercentage }]);
     e.target.reset();
   };
 
@@ -300,8 +309,12 @@ export default function App() {
     const role = formData.get('role');
     const birthday = formData.get('birthday');
     const maxDaysOff = formData.get('maxDaysOff');
+    const rawEmploymentPercentage = Number.parseInt(formData.get('employmentPercentage'), 10);
+    const employmentPercentage = Number.isFinite(rawEmploymentPercentage)
+      ? Math.min(100, Math.max(1, rawEmploymentPercentage))
+      : 100;
 
-    setMembers(members.map(m => m.id === editingMember.id ? { ...m, name, role, birthday, maxDaysOff } : m));
+    setMembers(members.map(m => m.id === editingMember.id ? { ...m, name, role, birthday, maxDaysOff, employmentPercentage } : m));
     setEditingMember(null);
   };
 
@@ -474,6 +487,7 @@ export default function App() {
     let currentStretchShift = {};
     let lastStretchShift = {};
     let daysWorkedThisMonth = {};
+    let hoursWorkedThisMonth = {};
 
     // Helper: check if a member is assigned to ANY shift on a given dateKey
     // Checks both the current month being built AND saved assignments (previous months)
@@ -530,6 +544,7 @@ export default function App() {
       currentStretchShift[m.id] = lastShiftId;
       lastStretchShift[m.id] = null;
       daysWorkedThisMonth[m.id] = 0;
+      hoursWorkedThisMonth[m.id] = 0;
 
       // If they already hit 5 at end of previous month, force rest at start
       if (streak >= 5) {
@@ -539,6 +554,22 @@ export default function App() {
         mandatoryDaysOff[m.id] = 0;
       }
     });
+
+    // Count the shifts already present in this month so the contract percentages
+    // balance new assignments against existing/manual assignments too.
+    for (let d = 1; d <= daysCount; d++) {
+      const dateKey = getDateKey(currentYear, currentMonth, d);
+      const dayAssignments = newAssignments[dateKey] || {};
+      Object.entries(dayAssignments).forEach(([shiftId, memberIds]) => {
+        const shift = shifts.find(s => s.id === shiftId);
+        if (!shift || !Array.isArray(memberIds)) return;
+        memberIds.forEach(memberId => {
+          if (Object.prototype.hasOwnProperty.call(hoursWorkedThisMonth, memberId)) {
+            hoursWorkedThisMonth[memberId] += calculateShiftDuration(shift.time);
+          }
+        });
+      });
+    }
 
     for (let d = 1; d <= daysCount; d++) {
       const dateObj = new Date(currentYear, currentMonth, d);
@@ -588,6 +619,12 @@ export default function App() {
 
       let workedToday = new Set();
       let assignedShiftToday = {};
+      Object.entries(newAssignments[dateKey]).forEach(([shiftId, memberIds]) => {
+        (Array.isArray(memberIds) ? memberIds : []).forEach(memberId => {
+          workedToday.add(memberId);
+          assignedShiftToday[memberId] = shiftId;
+        });
+      });
 
       // FIX: Sort by configurable priority field instead of hardcoded name matching
       const prioritizedShifts = [...shifts].sort((a, b) => {
@@ -640,6 +677,12 @@ export default function App() {
               else score += 200;
             }
 
+            // Compare hours against the employee's FTE fraction (e.g. 80 hours at 50%
+            // counts as a larger workload than 80 hours at 100%). This is a soft
+            // balancing factor; shift targets and role eligibility remain in force.
+            const contractAdjustedHours = (hoursWorkedThisMonth[m.id] || 0) / (getEmploymentPercentage(m) / 100);
+            score += contractAdjustedHours * 3;
+
             const isNewStretch = (consecutiveDays[m.id] || 0) === 0;
             const currShift = currentStretchShift[m.id];
             
@@ -666,6 +709,7 @@ export default function App() {
 
           const chosen = scoredCandidates[0].member;
           newAssignments[dateKey][shift.id].push(chosen.id);
+          hoursWorkedThisMonth[chosen.id] = (hoursWorkedThisMonth[chosen.id] || 0) + calculateShiftDuration(shift.time);
           workedToday.add(chosen.id);
           assignedShiftToday[chosen.id] = shift.id;
           shiftAvailable = shiftAvailable.filter(m => m.id !== chosen.id);
@@ -710,6 +754,7 @@ export default function App() {
                 const chosenShift = eligibleShifts[0];
                 if (!newAssignments[dateKey][chosenShift.id]) newAssignments[dateKey][chosenShift.id] = [];
                 newAssignments[dateKey][chosenShift.id].push(m.id);
+                hoursWorkedThisMonth[m.id] = (hoursWorkedThisMonth[m.id] || 0) + calculateShiftDuration(chosenShift.time);
                 workedToday.add(m.id);
                 assignedShiftToday[m.id] = chosenShift.id;
               }
@@ -968,6 +1013,10 @@ export default function App() {
                   {roles.length === 0 ? <option value="">{t('add_roles_first')}</option> : null}
                   {roles.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
                 </select>
+                <div className="flex flex-col flex-1 min-w-[140px] gap-1">
+                  <label htmlFor="new-employment-percentage" className="text-xs font-medium text-slate-600">{t('employment_percentage')}</label>
+                  <input id="new-employment-percentage" type="number" name="employmentPercentage" defaultValue="100" min="1" max="100" step="1" required aria-label={t('employment_percentage')} className="w-full rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-4 py-2 border text-slate-700" />
+                </div>
                 <input type="number" name="maxDaysOff" placeholder={t('max_days_off')} title={t('max_days_off')} min="0" max="31" className="flex-1 min-w-[110px] rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-4 py-2 border text-slate-700" />
                 <input type="date" name="birthday" title={t('birthday')} className="flex-1 min-w-[140px] rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-4 py-2 border text-slate-500" />
                 <button type="submit" disabled={roles.length === 0} className="flex-none whitespace-nowrap bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition flex items-center justify-center gap-2 font-medium text-sm">
@@ -991,6 +1040,7 @@ export default function App() {
                         <span className="font-medium px-2 py-0.5 bg-slate-100 rounded-md flex items-center gap-1">
                           <ShieldCheck className="w-3 h-3 text-slate-400"/> {member.role}
                         </span>
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-indigo-400"/> {t('employment_percentage_short')}: {getEmploymentPercentage(member)}%</span>
                         {member.maxDaysOff ? <span className="flex items-center gap-1"><Calendar className="w-3 h-3 text-emerald-500"/> {member.maxDaysOff} {t('max_days_off')}</span> : null}
                         {member.birthday ? <span className="flex items-center gap-1"><Gift className="w-3 h-3 text-indigo-400"/> {formatDateDDMMYYYY(member.birthday)}</span> : null}
                         <span className="flex items-center gap-1"><Sun className="w-3 h-3 text-orange-400"/> {getHolidaysUsed(member.id)} / 25 Days</span>
@@ -1637,6 +1687,13 @@ export default function App() {
                 <div className="w-full sm:w-32">
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('max_days_off')}</label>
                   <input type="number" min="0" max="31" name="maxDaysOff" defaultValue={editingMember.maxDaysOff || ''} className="w-full rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-4 py-2 border text-slate-700" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('employment_percentage')}</label>
+                <div className="flex items-center gap-2">
+                  <input type="number" name="employmentPercentage" defaultValue={getEmploymentPercentage(editingMember)} min="1" max="100" step="1" required className="w-full rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-4 py-2 border text-slate-700" />
+                  <span className="text-sm text-slate-500">%</span>
                 </div>
               </div>
               <div>
