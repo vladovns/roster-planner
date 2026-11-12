@@ -63,6 +63,49 @@ export function calculateShiftDuration(timeStr) {
   return Math.max(0, rawDuration - breakTime);
 }
 
+/**
+ * Normalize a dated employment-contract timeline, including legacy records.
+ */
+export function normalizeEmploymentHistory(history, fallbackPercentage = 100) {
+  const fallbackNumber = Number(fallbackPercentage);
+  const fallback = Number.isFinite(fallbackNumber) ? Math.min(100, Math.max(1, Math.round(fallbackNumber))) : 100;
+  const byDate = new Map();
+  (Array.isArray(history) ? history : []).forEach((entry) => {
+    const effectiveFrom = String(entry?.effectiveFrom || '').trim();
+    const percentage = Number(entry?.percentage);
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(effectiveFrom)) return;
+    const date = new Date(effectiveFrom + 'T00:00:00');
+    if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== effectiveFrom) return;
+    if (!Number.isFinite(percentage) || percentage < 1 || percentage > 100) return;
+    byDate.set(effectiveFrom, { effectiveFrom, percentage: Math.round(percentage) });
+  });
+  const normalized = [...byDate.values()].sort((a, b) => a.effectiveFrom.localeCompare(b.effectiveFrom));
+  return normalized.length ? normalized : [{ effectiveFrom: '2000-01-01', percentage: fallback }];
+}
+
+/** Return the contract percentage in effect on a given YYYY-MM-DD date. */
+export function getEmploymentPercentageForDate(member, dateInput) {
+  const history = normalizeEmploymentHistory(member?.employmentHistory, member?.employmentPercentage ?? 100);
+  const dateKey = typeof dateInput === 'string' ? dateInput.slice(0, 10) : '9999-12-31';
+  let percentage = history[0].percentage;
+  for (const entry of history) {
+    if (entry.effectiveFrom > dateKey) break;
+    percentage = entry.percentage;
+  }
+  return percentage;
+}
+
+/** Average contract fraction in a month, weighted by calendar days. */
+export function getMonthlyEmploymentFraction(member, year, month) {
+  const daysInMonth = getDaysInMonth(year, month);
+  if (!daysInMonth) return 1;
+  let totalFraction = 0;
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateKey = String(year) + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+    totalFraction += getEmploymentPercentageForDate(member, dateKey) / 100;
+  }
+  return totalFraction / daysInMonth;
+}
 export function check11HourRest(timeYesterday, timeToday) {
   if (!timeYesterday || !timeToday) return true;
 
