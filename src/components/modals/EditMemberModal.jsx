@@ -44,7 +44,7 @@ export default function EditMemberModal() {
 
   if (!editingMember) return null;
 
-  const currentPercentage = getEmploymentPercentageForDate(editingMember, getLocalDateKey());
+  const currentPercentage = getEmploymentPercentageForDate({ employmentHistory }, getLocalDateKey());
 
   const updateHistoryEntry = (index, field, value) => {
     setEmploymentHistory(previous => previous.map((entry, entryIndex) => (
