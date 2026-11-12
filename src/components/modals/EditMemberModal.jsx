@@ -8,6 +8,7 @@ import {
 
 const fieldClass = "h-10 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100";
 const labelClass = "mb-1.5 block text-xs font-semibold tracking-wide text-slate-600";
+const EMPLOYMENT_PRESETS = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10];
 
 function getEmploymentPercentage(member) {
   const percentage = Number(member?.employmentPercentage);
@@ -133,6 +134,9 @@ export default function EditMemberModal() {
             </div>
 
             <input type="hidden" name="employmentHistory" value={JSON.stringify(employmentHistory)} />
+            <datalist id="employment-percentage-presets">
+              {EMPLOYMENT_PRESETS.map(percentage => <option key={percentage} value={percentage} />)}
+            </datalist>
 
             <div className="space-y-2">
               {employmentHistory.map((entry, index) => (
@@ -154,6 +158,7 @@ export default function EditMemberModal() {
                       <input
                         id={`employment-percentage-${index}`}
                         type="number"
+                        list="employment-percentage-presets"
                         min="1"
                         max="100"
                         step="1"
