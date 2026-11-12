@@ -85,8 +85,19 @@ export function normalizeEmploymentHistory(history, fallbackPercentage = 100) {
 
 /** Return the contract percentage in effect on a given YYYY-MM-DD date. */
 export function getEmploymentPercentageForDate(member, dateInput) {
-  const history = normalizeEmploymentHistory(member?.employmentHistory, member?.employmentPercentage ?? 100);
-  const dateKey = typeof dateInput === 'string' ? dateInput.slice(0, 10) : '9999-12-31';
+  const rawHistory = Array.isArray(member?.employmentHistory) ? member.employmentHistory : [];
+  const history = normalizeEmploymentHistory(rawHistory, member?.employmentPercentage ?? 100);
+  const dateKey = typeof dateInput === 'string'
+    ? dateInput.slice(0, 10)
+    : dateInput instanceof Date && !Number.isNaN(dateInput.getTime())
+      ? getDateKey(dateInput.getFullYear(), dateInput.getMonth(), dateInput.getDate())
+      : '9999-12-31';
+
+  // A dated contract must not apply before its effective date. Use 100% as the
+  // neutral baseline before the first recorded change; legacy records are
+  // normalized to a 2000-01-01 entry and therefore keep their saved percentage.
+  if (rawHistory.length > 0 && dateKey < history[0].effectiveFrom) return 100;
+
   let percentage = history[0].percentage;
   for (const entry of history) {
     if (entry.effectiveFrom > dateKey) break;
