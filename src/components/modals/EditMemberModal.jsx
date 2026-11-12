@@ -85,7 +85,7 @@ export default function EditMemberModal() {
         setHistoryError(t('employment_history_duplicate_date'));
         return;
       }
-      if (!/^\\d+$/.test(percentageText) || !Number.isInteger(percentage) || percentage < 1 || percentage > 100) {
+      if (!/^\d+$/.test(percentageText) || !Number.isInteger(percentage) || percentage < 1 || percentage > 100) {
         event.preventDefault();
         setHistoryError(t('employment_history_invalid_percentage'));
         return;
