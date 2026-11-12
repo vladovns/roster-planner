@@ -74,8 +74,14 @@ export function normalizeEmploymentHistory(history, fallbackPercentage = 100) {
     const effectiveFrom = String(entry?.effectiveFrom || '').trim();
     const percentage = Number(entry?.percentage);
     if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(effectiveFrom)) return;
-    const date = new Date(effectiveFrom + 'T00:00:00');
-    if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== effectiveFrom) return;
+    const [year, month, day] = effectiveFrom.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    if (
+      Number.isNaN(date.getTime()) ||
+      date.getFullYear() !== year ||
+      date.getMonth() !== month - 1 ||
+      date.getDate() !== day
+    ) return;
     if (!Number.isFinite(percentage) || percentage < 1 || percentage > 100) return;
     byDate.set(effectiveFrom, { effectiveFrom, percentage: Math.round(percentage) });
   });
