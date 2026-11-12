@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { getDateKey, check11HourRest, calculateShiftDuration } from '../utils/helpers';
+import { getDateKey, check11HourRest, calculateShiftDuration, getEmploymentPercentageForDate, getMonthlyEmploymentFraction } from '../utils/helpers';
 import { useRoster } from '../context/RosterContext';
 
 /**
@@ -15,12 +15,9 @@ function getShiftStartHour(timeStr) {
   return h + (isNaN(m) ? 0 : m / 60);
 }
 
-/** Returns the member's employment fraction, defaulting legacy records to 100%. */
-function getEmploymentFraction(member) {
-  const percentage = Number(member?.employmentPercentage);
-  return Number.isFinite(percentage) && percentage >= 1 && percentage <= 100
-    ? percentage / 100
-    : 1;
+/** Returns the contract fraction in effect on a particular roster date. */
+function getEmploymentFraction(member, dateKey) {
+  return getEmploymentPercentageForDate(member, dateKey) / 100;
 }
 
 /**
@@ -28,7 +25,7 @@ function getEmploymentFraction(member) {
  * contract. The setting remains a full-time baseline; part-time members receive
  * a proportionally smaller work-day target.
  */
-function getEffectiveMaxDaysOff(member, daysCount) {
+function getEffectiveMaxDaysOff(member, daysCount, monthlyEmploymentFraction = 1) {
   if (
     member?.maxDaysOff === null ||
     member?.maxDaysOff === undefined ||
@@ -39,7 +36,7 @@ function getEffectiveMaxDaysOff(member, daysCount) {
   if (!Number.isFinite(maxDaysOff)) return null;
 
   const fullTimeRequiredWorkDays = Math.max(0, daysCount - maxDaysOff);
-  const contractRequiredWorkDays = Math.ceil(fullTimeRequiredWorkDays * getEmploymentFraction(member));
+  const contractRequiredWorkDays = Math.ceil(fullTimeRequiredWorkDays * monthlyEmploymentFraction);
   return Math.max(0, daysCount - contractRequiredWorkDays);
 }
 
@@ -52,6 +49,9 @@ export function useAutoScheduler() {
 
   const autoSchedule = useCallback(() => {
     const newAssignments = structuredClone(assignments);
+    const monthlyEmploymentFractions = Object.fromEntries(
+      members.map(member => [member.id, getMonthlyEmploymentFraction(member, currentYear, currentMonth)])
+    );
 
     let consecutiveDays = {};
     let mandatoryDaysOff = {};
@@ -324,12 +324,12 @@ export function useAutoScheduler() {
             // reach a proportionately lower actual-hours total. This should take
             // priority over stretch-shift preferences when the rota is tight.
             score += (contractAdjustedHours[m.id] || 0) * 20;
-            score += ((daysWorkedThisMonth[m.id] || 0) / getEmploymentFraction(m)) * 15;
+            score += ((daysWorkedThisMonth[m.id] || 0) / (monthlyEmploymentFractions[m.id] || 1)) * 15;
 
             // maxDaysOff pressure: strongly prefer members who are at risk of
             // exceeding their max days off limit. The tighter the budget, the
             // stronger the pull toward working today.
-            const effectiveMaxOff = getEffectiveMaxDaysOff(m, daysCount);
+            const effectiveMaxOff = getEffectiveMaxDaysOff(m, daysCount, monthlyEmploymentFractions[m.id] || 1);
             if (effectiveMaxOff !== null) {
               const worked = daysWorkedThisMonth[m.id] || 0;
               const minWorkDays = daysCount - effectiveMaxOff;
@@ -428,7 +428,7 @@ export function useAutoScheduler() {
           const chosen = scoredCandidates[0].member;
           newAssignments[dateKey][shift.id].push(chosen.id);
           const chosenMember = members.find(m => m.id === chosen.id);
-          const chosenFte = chosenMember && Number(chosenMember.employmentPercentage) >= 1 && Number(chosenMember.employmentPercentage) <= 100 ? Number(chosenMember.employmentPercentage) / 100 : 1;
+          const chosenFte = chosenMember ? getEmploymentFraction(chosenMember, dateKey) : 1;
           contractAdjustedHours[chosen.id] = (contractAdjustedHours[chosen.id] || 0) + calculateShiftDuration(shift.time) / chosenFte;
           workedToday.add(chosen.id);
           assignedShiftToday[chosen.id] = shift.id;
@@ -466,7 +466,7 @@ export function useAutoScheduler() {
       // toward the days-off budget. Force work when remaining days are tight.
       available.forEach(m => {
         if (!workedToday.has(m.id)) {
-          const maxOff = getEffectiveMaxDaysOff(m, daysCount);
+          const maxOff = getEffectiveMaxDaysOff(m, daysCount, monthlyEmploymentFractions[m.id] || 1);
           if (maxOff !== null) {
             const worked = daysWorkedThisMonth[m.id] || 0;
             // Days already off this month (not worked, not today)
@@ -508,7 +508,7 @@ export function useAutoScheduler() {
                 const chosenShift = eligibleShifts[0];
                 if (!newAssignments[dateKey][chosenShift.id]) newAssignments[dateKey][chosenShift.id] = [];
                 newAssignments[dateKey][chosenShift.id].push(m.id);
-                const forcedFte = Number(m.employmentPercentage) >= 1 && Number(m.employmentPercentage) <= 100 ? Number(m.employmentPercentage) / 100 : 1;
+                const forcedFte = getEmploymentFraction(m, dateKey);
                 contractAdjustedHours[m.id] = (contractAdjustedHours[m.id] || 0) + calculateShiftDuration(chosenShift.time) / forcedFte;
                 workedToday.add(m.id);
                 assignedShiftToday[m.id] = chosenShift.id;

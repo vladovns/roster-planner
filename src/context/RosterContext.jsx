@@ -3,6 +3,7 @@ import { translations, langMap } from '../utils/translations';
 import {
   getDaysInMonth, getDayOfWeekShort, getDateKey, getRandomHex, generateId,
   formatDateDDMMYYYY, calculateShiftDuration, check11HourRest,
+  normalizeEmploymentHistory, getEmploymentPercentageForDate,
   MEMBER_COLORS, DAY_NUMBERS,
 } from '../utils/helpers';
 
@@ -180,10 +181,15 @@ export function RosterProvider({ children }) {
     const maxDaysOff = formData.get('maxDaysOff');
     const allocationOption = formData.get('allocationOption') || '';
     const employmentPercentage = readEmploymentPercentage(formData);
+    const today = new Date();
+    const localToday = getDateKey(today.getFullYear(), today.getMonth(), today.getDate());
+    const effectiveFrom = String(formData.get('employmentEffectiveFrom') || localToday);
+    const employmentHistory = normalizeEmploymentHistory([{ effectiveFrom, percentage: employmentPercentage }], employmentPercentage);
+    const currentEmploymentPercentage = getEmploymentPercentageForDate({ employmentHistory }, localToday);
 
     setMembers(prev => {
       const color = MEMBER_COLORS[prev.length % MEMBER_COLORS.length];
-      return [...prev, { id: generateId(), name, role, color, birthday, maxDaysOff, allocationOption, employmentPercentage }];
+      return [...prev, { id: generateId(), name, role, color, birthday, maxDaysOff, allocationOption, employmentPercentage: currentEmploymentPercentage, employmentHistory }];
     });
     e.target.reset();
   }, []);
@@ -227,12 +233,21 @@ export function RosterProvider({ children }) {
     const birthday = formData.get('birthday');
     const maxDaysOff = formData.get('maxDaysOff');
     const allocationOption = formData.get('allocationOption') || '';
-    const employmentPercentage = readEmploymentPercentage(formData);
+    let submittedHistory = [];
+    try {
+      submittedHistory = JSON.parse(String(formData.get('employmentHistory') || '[]'));
+    } catch {
+      submittedHistory = [];
+    }
 
     setEditingMember(prev => {
       if (!prev) return null;
+      const employmentHistory = normalizeEmploymentHistory(submittedHistory, prev.employmentPercentage ?? 100);
+      const today = new Date();
+      const localToday = getDateKey(today.getFullYear(), today.getMonth(), today.getDate());
+      const employmentPercentage = getEmploymentPercentageForDate({ employmentHistory }, localToday);
       setMembers(mPrev => mPrev.map(m => m.id === prev.id
-        ? { ...m, name, role, birthday, maxDaysOff, allocationOption, employmentPercentage }
+        ? { ...m, name, role, birthday, maxDaysOff, allocationOption, employmentPercentage, employmentHistory }
         : m
       ));
       return null;
