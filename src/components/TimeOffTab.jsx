@@ -153,7 +153,17 @@ export default function TimeOffTab() {
     events, addEvent, updateEvent, removeEvent,
   } = useRoster();
 
-  const [eventsExpanded, setEventsExpanded] = useState(events.length === 0);
+  const [eventsExpanded, setEventsExpanded] = useState(false);
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const availableYears = Array.from(new Set([
+    currentYear,
+    ...Object.keys(timeOff).map(dateKey => Number(dateKey.slice(0, 4))).filter(Number.isInteger),
+  ])).sort((a, b) => b - a);
+  const selectedYearTimeOff = Object.fromEntries(
+    Object.entries(timeOff).filter(([dateKey]) => Number(dateKey.slice(0, 4)) === selectedYear)
+  );
+  const visibleBookings = groupTimeOffEntries(selectedYearTimeOff);
   const [selectedColor, setSelectedColor] = useState(EVENT_COLORS[0].text);
 
   return (
@@ -280,10 +290,37 @@ export default function TimeOffTab() {
         </div>
 
         {/* 3. Bookings List */}
+        <div className="px-4 py-3 sm:px-6 border-t border-slate-200 bg-white">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-800">{t('bookings')}</h3>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {visibleBookings.length} {t('bookings_for')} {selectedYear}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <label htmlFor="timeoff-year-filter" className="text-xs font-medium text-slate-600">{t('year')}</label>
+              <select
+                id="timeoff-year-filter"
+                value={selectedYear}
+                onChange={event => setSelectedYear(Number(event.target.value))}
+                className="h-10 min-w-32 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+              >
+                {availableYears.map(year => (
+                  <option key={year} value={year}>
+                    {year}{year === currentYear ? ` — ${t('current_year')}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
         <ul className="divide-y divide-slate-200">
-          {Object.keys(timeOff).length === 0 ? (
-            <li className="p-6 text-center text-slate-500">{t('no_time_off')}</li>
-          ) : groupTimeOffEntries(timeOff).map(group => {
+          {visibleBookings.length === 0 ? (
+            <li className="p-6 text-center text-slate-500">
+              {Object.keys(timeOff).length === 0 ? t('no_time_off') : t('no_time_off_for_year')}
+            </li>
+          ) : visibleBookings.map(group => {
             const member = members.find(m => m.id === group.memberId);
             if (!member) return null;
             const isSingleDay = group.startDateKey === group.endDateKey;
