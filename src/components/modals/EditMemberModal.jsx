@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { X, Plus, Trash2, ChevronDown } from 'lucide-react';
 import { useRoster } from '../../context/RosterContext';
 import {
   normalizeEmploymentHistory,
@@ -34,6 +34,7 @@ export default function EditMemberModal() {
   const { t, editingMember, setEditingMember, roles, updateMember } = useRoster();
   const [employmentHistory, setEmploymentHistory] = useState([]);
   const [historyError, setHistoryError] = useState('');
+  const [openPercentageIndex, setOpenPercentageIndex] = useState(null);
 
   useEffect(() => {
     if (!editingMember) return;
@@ -72,7 +73,8 @@ export default function EditMemberModal() {
     const seenDates = new Set();
     for (const entry of employmentHistory) {
       const date = String(entry.effectiveFrom || '');
-      const percentage = Number(entry.percentage);
+      const percentageText = String(entry.percentage ?? '').trim();
+      const percentage = Number(percentageText);
       if (!isValidDateKey(date)) {
         event.preventDefault();
         setHistoryError(t('employment_history_invalid_date'));
@@ -83,7 +85,7 @@ export default function EditMemberModal() {
         setHistoryError(t('employment_history_duplicate_date'));
         return;
       }
-      if (!Number.isFinite(percentage) || percentage < 1 || percentage > 100) {
+      if (!/^\\d+$/.test(percentageText) || !Number.isInteger(percentage) || percentage < 1 || percentage > 100) {
         event.preventDefault();
         setHistoryError(t('employment_history_invalid_percentage'));
         return;
@@ -134,10 +136,6 @@ export default function EditMemberModal() {
             </div>
 
             <input type="hidden" name="employmentHistory" value={JSON.stringify(employmentHistory)} />
-            <datalist id="employment-percentage-presets">
-              {EMPLOYMENT_PRESETS.map(percentage => <option key={percentage} value={percentage} />)}
-            </datalist>
-
             <div className="space-y-2">
               {employmentHistory.map((entry, index) => (
                 <div key={index} className="grid grid-cols-1 items-end gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[minmax(0,1fr)_10rem_auto]">
@@ -154,20 +152,62 @@ export default function EditMemberModal() {
                   </div>
                   <div className="min-w-0">
                     <label htmlFor={`employment-percentage-${index}`} className={labelClass}>{t('contract_percentage')}</label>
-                    <div className="flex h-10 overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100">
-                      <input
-                        id={`employment-percentage-${index}`}
-                        type="number"
-                        list="employment-percentage-presets"
-                        min="1"
-                        max="100"
-                        step="1"
-                        value={entry.percentage ?? ''}
-                        onChange={event => updateHistoryEntry(index, 'percentage', event.target.value)}
-                        required
-                        className="h-full w-full min-w-0 border-0 bg-transparent px-3 text-sm text-slate-700 focus:outline-none focus:ring-0"
-                      />
-                      <span className="flex items-center border-l border-slate-200 bg-white px-3 text-sm text-slate-500">%</span>
+                    <div
+                      className="relative min-w-0"
+                      onBlur={event => {
+                        if (!event.currentTarget.contains(event.relatedTarget)) setOpenPercentageIndex(null);
+                      }}
+                      onKeyDown={event => {
+                        if (event.key === 'Escape') setOpenPercentageIndex(null);
+                      }}
+                    >
+                      <div className="flex h-10 overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100">
+                        <input
+                          id={`employment-percentage-${index}`}
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={3}
+                          autoComplete="off"
+                          value={entry.percentage ?? ''}
+                          onChange={event => updateHistoryEntry(index, 'percentage', event.target.value)}
+                          required
+                          className="h-full w-full min-w-0 border-0 bg-transparent px-3 text-sm text-slate-700 focus:outline-none focus:ring-0"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setOpenPercentageIndex(openPercentageIndex === index ? null : index)}
+                          aria-label={t('contract_percentage')}
+                          aria-expanded={openPercentageIndex === index}
+                          aria-haspopup="listbox"
+                          className="flex h-full w-9 shrink-0 items-center justify-center border-l border-slate-200 text-slate-500 transition hover:bg-slate-50"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </button>
+                        <span className="flex items-center border-l border-slate-200 bg-white px-3 text-sm text-slate-500">%</span>
+                      </div>
+                      {openPercentageIndex === index ? (
+                        <div
+                          role="listbox"
+                          aria-label={t('contract_percentage')}
+                          className="absolute right-0 top-full z-30 mt-1 max-h-48 w-24 overflow-y-auto rounded-lg border border-slate-200 bg-white p-1 shadow-lg"
+                        >
+                          {EMPLOYMENT_PRESETS.map(percentage => (
+                            <button
+                              key={percentage}
+                              type="button"
+                              role="option"
+                              aria-selected={Number(entry.percentage) === percentage}
+                              onClick={() => {
+                                updateHistoryEntry(index, 'percentage', String(percentage));
+                                setOpenPercentageIndex(null);
+                              }}
+                              className="w-full rounded-md px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-700 focus:bg-indigo-50 focus:outline-none"
+                            >
+                              {percentage}%
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                   <button
