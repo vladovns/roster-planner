@@ -466,7 +466,7 @@ export function useAutoScheduler() {
       // toward the days-off budget. Force work when remaining days are tight.
       available.forEach(m => {
         if (!workedToday.has(m.id)) {
-          const maxOff = getEffectiveMaxDaysOff(m, daysCount);
+          const maxOff = getEffectiveMaxDaysOff(m, daysCount, monthlyEmploymentFractions[m.id] || 1);
           if (maxOff !== null) {
             const worked = daysWorkedThisMonth[m.id] || 0;
             // Days already off this month (not worked, not today)
