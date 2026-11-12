@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Users, UserPlus, Trash2, Pencil, ShieldCheck, Calendar, Gift, ChevronUp, ChevronDown, Clock } from 'lucide-react';
 import { useRoster } from '../context/RosterContext';
-import { formatDateDDMMYYYY } from '../utils/helpers';
+import { formatDateDDMMYYYY, getEmploymentPercentageForDate } from '../utils/helpers';
 
 const fieldClass = "h-10 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 shadow-sm transition placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100";
 const labelClass = "text-xs font-semibold tracking-wide text-slate-600";
@@ -15,6 +15,9 @@ export default function TeamTab() {
   } = useRoster();
   const [employmentPercentageChoice, setEmploymentPercentageChoice] = useState('100');
   const [customEmploymentPercentage, setCustomEmploymentPercentage] = useState('');
+
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
   const handleAddMember = (e) => {
     addMember(e);
@@ -83,6 +86,11 @@ export default function TeamTab() {
           </div>
 
           <div className="min-w-0 flex flex-col gap-1.5">
+            <label htmlFor="new-employment-effective-from" className={labelClass}>{t('effective_from')}</label>
+            <input id="new-employment-effective-from" type="date" name="employmentEffectiveFrom" defaultValue={todayKey} required className={fieldClass} />
+          </div>
+
+          <div className="min-w-0 flex flex-col gap-1.5">
             <label htmlFor="new-member-max-days-off" className={labelClass}>{t('max_days_off')}</label>
             <input id="new-member-max-days-off" type="number" name="maxDaysOff" min="0" max="31" placeholder="—" className={fieldClass} />
           </div>
@@ -124,7 +132,7 @@ export default function TeamTab() {
                   <span className="font-medium px-2 py-0.5 bg-slate-100 rounded-md flex items-center gap-1">
                     <ShieldCheck className="w-3 h-3 text-slate-400" /> {member.role}
                   </span>
-                  <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-indigo-400" /> {t('employment_percentage_short')}: {Number.isFinite(Number(member.employmentPercentage)) && Number(member.employmentPercentage) >= 1 && Number(member.employmentPercentage) <= 100 ? Number(member.employmentPercentage) : 100}%</span>
+                  <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-indigo-400" /> {t('employment_percentage_short')}: {getEmploymentPercentageForDate(member, todayKey)}%</span>
                   {member.allocationOption ? <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md">{member.allocationOption === '1' ? t('allocation_option_1') : t('allocation_option_2')}</span> : null}
                   {member.maxDaysOff ? <span className="flex items-center gap-1"><Calendar className="w-3 h-3 text-emerald-500" /> {member.maxDaysOff} {t('max_days_off')}</span> : null}
                   {member.birthday ? <span className="flex items-center gap-1"><Gift className="w-3 h-3 text-indigo-400" /> {formatDateDDMMYYYY(member.birthday)}</span> : null}
