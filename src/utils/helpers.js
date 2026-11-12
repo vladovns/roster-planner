@@ -73,7 +73,7 @@ export function normalizeEmploymentHistory(history, fallbackPercentage = 100) {
   (Array.isArray(history) ? history : []).forEach((entry) => {
     const effectiveFrom = String(entry?.effectiveFrom || '').trim();
     const percentage = Number(entry?.percentage);
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(effectiveFrom)) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(effectiveFrom)) return;
     const [year, month, day] = effectiveFrom.split('-').map(Number);
     const date = new Date(year, month - 1, day);
     if (
