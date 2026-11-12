@@ -246,7 +246,17 @@ export function useAutoScheduler() {
       let pulledBack = [];
       if (available.length < minRequired && mandatoryRestMembers.length > 0) {
         const deficit = minRequired - available.length;
-        pulledBack = mandatoryRestMembers.slice(0, deficit);
+        // When rest days must be relaxed to maintain minimum coverage, pull back
+        // the least-loaded employees first, using the same FTE-normalized
+        // workload measure as the regular candidate scoring. Do not use team-list
+        // order, which can repeatedly penalize part-time employees near the end.
+        const normalizedWorkload = (member) => (
+          (contractAdjustedHours[member.id] || 0) +
+          (((daysWorkedThisMonth[member.id] || 0) / (monthlyEmploymentFractions[member.id] || 1)) * 0.75)
+        );
+        pulledBack = [...mandatoryRestMembers]
+          .sort((a, b) => normalizedWorkload(a) - normalizedWorkload(b))
+          .slice(0, deficit);
       }
 
       let workedToday = new Set();
@@ -451,8 +461,12 @@ export function useAutoScheduler() {
 
           let pbAvailable = pulledBack.filter(m => !workedToday.has(m.id) && isEligibleForShift(m, shift, d));
           while (needed > 0 && pbAvailable.length > 0) {
+            // Count pulled-back shifts in the same contract-adjusted workload
+            // totals as regular assignments so later decisions remain FTE-aware.
             const chosen = pbAvailable[0];
             newAssignments[dateKey][shift.id].push(chosen.id);
+            const chosenFte = getEmploymentFraction(chosen, dateKey);
+            contractAdjustedHours[chosen.id] = (contractAdjustedHours[chosen.id] || 0) + calculateShiftDuration(shift.time) / chosenFte;
             workedToday.add(chosen.id);
             assignedShiftToday[chosen.id] = shift.id;
             pbAvailable = pbAvailable.filter(m => m.id !== chosen.id);
