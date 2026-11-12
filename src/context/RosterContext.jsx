@@ -185,10 +185,11 @@ export function RosterProvider({ children }) {
     const localToday = getDateKey(today.getFullYear(), today.getMonth(), today.getDate());
     const effectiveFrom = String(formData.get('employmentEffectiveFrom') || localToday);
     const employmentHistory = normalizeEmploymentHistory([{ effectiveFrom, percentage: employmentPercentage }], employmentPercentage);
+    const currentEmploymentPercentage = getEmploymentPercentageForDate({ employmentHistory }, localToday);
 
     setMembers(prev => {
       const color = MEMBER_COLORS[prev.length % MEMBER_COLORS.length];
-      return [...prev, { id: generateId(), name, role, color, birthday, maxDaysOff, allocationOption, employmentPercentage, employmentHistory }];
+      return [...prev, { id: generateId(), name, role, color, birthday, maxDaysOff, allocationOption, employmentPercentage: currentEmploymentPercentage, employmentHistory }];
     });
     e.target.reset();
   }, []);
