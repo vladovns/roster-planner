@@ -180,7 +180,19 @@ export function useAutoScheduler() {
       // a previous run blocking other shifts).
       newAssignments[dateKey] = {};
 
-      const prioritizedShifts = [...shifts].sort((a, b) => getShiftStartHour(a.time) - getShiftStartHour(b.time));
+      // S3 is the mandatory closing shift on Fridays and Saturdays. Reserve
+      // eligible employees for it before assigning the other weekend shifts.
+      const isMandatoryS3 = (shift) => (
+        (dayOfWeekNum === '5' || dayOfWeekNum === '6') &&
+        String(shift?.name || '').trim().toUpperCase() === 'S3'
+      );
+      const prioritizeMandatoryS3 = (orderedShifts) => [
+        ...orderedShifts.filter(isMandatoryS3),
+        ...orderedShifts.filter(shift => !isMandatoryS3(shift)),
+      ];
+      const prioritizedShifts = prioritizeMandatoryS3(
+        [...shifts].sort((a, b) => getShiftStartHour(a.time) - getShiftStartHour(b.time))
+      );
 
       // Determine which shifts need staff today
       const activeShifts = prioritizedShifts.filter(s => {
@@ -248,15 +260,29 @@ export function useAutoScheduler() {
         const deficit = minRequired - available.length;
         // When rest days must be relaxed to maintain minimum coverage, pull back
         // the least-loaded employees first, using the same FTE-normalized
-        // workload measure as the regular candidate scoring. Do not use team-list
-        // order, which can repeatedly penalize part-time employees near the end.
+        // workload measure as the regular candidate scoring.
         const normalizedWorkload = (member) => (
           (contractAdjustedHours[member.id] || 0) +
           (((daysWorkedThisMonth[member.id] || 0) / (monthlyEmploymentFractions[member.id] || 1)) * 0.75)
         );
-        pulledBack = [...mandatoryRestMembers]
-          .sort((a, b) => normalizedWorkload(a) - normalizedWorkload(b))
-          .slice(0, deficit);
+        const leastLoadedRestMembers = [...mandatoryRestMembers]
+          .sort((a, b) => normalizedWorkload(a) - normalizedWorkload(b));
+
+        // On mandatory S3 days, a pulled-back team member must also be eligible
+        // for S3 where possible. The Team Leader role may explicitly exclude S3,
+        // so a generic least-loaded choice can otherwise waste the fallback.
+        const mandatoryS3Shift = activeShifts.find(isMandatoryS3);
+        if (mandatoryS3Shift) {
+          const s3Eligible = leastLoadedRestMembers.filter(member =>
+            isEligibleForShift(member, mandatoryS3Shift, d)
+          );
+          const otherMembers = leastLoadedRestMembers.filter(member =>
+            !isEligibleForShift(member, mandatoryS3Shift, d)
+          );
+          pulledBack = [...s3Eligible, ...otherMembers].slice(0, deficit);
+        } else {
+          pulledBack = leastLoadedRestMembers.slice(0, deficit);
+        }
       }
 
       let workedToday = new Set();
@@ -277,7 +303,10 @@ export function useAutoScheduler() {
         const sorted = [...activeShifts].sort((a, b) => getShiftStartHour(a.time) - getShiftStartHour(b.time));
         const excess = totalDemand - allAvailable.length;
         // Drop the N earliest shifts that can't be staffed
-        fillOrder = sorted.slice(excess);
+        // Preserve the existing capacity-based shift selection, but move
+        // mandatory weekend S3 to the front so available eligible staff are
+        // reserved for the 04:00 closing requirement before other shifts.
+        fillOrder = prioritizeMandatoryS3(sorted.slice(excess));
       } else {
         fillOrder = prioritizedShifts;
       }
