@@ -23,6 +23,7 @@ export default function RosterTab() {
   const autoSchedule = useAutoScheduler();
   const [confirmClear, setConfirmClear] = useState(false);
   const [showUnderstaffed, setShowUnderstaffed] = useState(true);
+  const [activeRosterView, setActiveRosterView] = useState('roster');
 
   const exportToPDF = async () => {
     setIsExporting(true);
@@ -44,6 +45,10 @@ export default function RosterTab() {
       document.body.appendChild(wrapper);
 
       const clone = element.cloneNode(true);
+      // The PDF always contains both the roster grid and monthly summary,
+      // regardless of which view is currently selected in the app.
+      clone.querySelectorAll('[data-roster-view-switch]').forEach(el => el.remove());
+      clone.querySelectorAll('[data-roster-view]').forEach(el => el.classList.remove('hidden'));
 
       // Add title
       const monthYear = currentDate.toLocaleString(langMap[language] || 'en-US', { month: 'long', year: 'numeric' });
@@ -274,6 +279,29 @@ export default function RosterTab() {
         </div>
       ) : (
         <div id="roster-content-to-print" className="flex flex-col flex-1 min-h-0 overflow-hidden print:block print:h-auto print:overflow-visible bg-white">
+          <div data-roster-view-switch className="flex items-center gap-1 px-4 sm:px-6 pt-4 print:hidden">
+            <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1" role="tablist" aria-label={t('monthly_roster')}>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeRosterView === 'roster'}
+                onClick={() => setActiveRosterView('roster')}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${activeRosterView === 'roster' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                {t('roster_view')}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeRosterView === 'summary'}
+                onClick={() => setActiveRosterView('summary')}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${activeRosterView === 'summary' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                {t('summary_view')}
+              </button>
+            </div>
+          </div>
+
           {/* Shifts Legend */}
           <div className="mb-4 mx-4 sm:mx-6 flex flex-wrap gap-4 text-sm font-medium text-slate-700 bg-white p-3 rounded-lg border border-slate-200 shadow-sm print:mx-0 print:border-none print:shadow-none print:p-0 print:mb-2">
             <span className="text-slate-500 uppercase tracking-wider text-xs flex items-center">{t('shift_legend')}</span>
@@ -286,7 +314,7 @@ export default function RosterTab() {
             ))}
           </div>
 
-          <div className="overflow-x-auto print:flex-none print:h-auto print:overflow-visible no-scrollbar">
+          <div data-roster-view="roster" className={`${activeRosterView === 'roster' ? '' : 'hidden'} overflow-x-auto print:flex-none print:h-auto print:overflow-visible no-scrollbar`}>
             <table className="w-full min-w-[768px] print:min-w-0 table-fixed divide-y divide-slate-200 border-collapse text-center">
               <thead className="bg-slate-100 sticky top-0 z-20 shadow-sm">
                 <tr>
@@ -400,8 +428,8 @@ export default function RosterTab() {
             </table>
           </div>
 
-          {/* Monthly Summary Footer — compact table */}
-          <div className="border-t border-slate-200 bg-slate-50 px-4 py-2 shrink-0 overflow-x-auto print:break-inside-avoid print:bg-white print:border-none print:shadow-none print:mt-4 print:p-0">
+          {/* Monthly Summary — separate view */}
+          <div data-roster-view="summary" className={`${activeRosterView === 'summary' ? '' : 'hidden'} border-t border-slate-200 bg-slate-50 px-4 py-4 shrink-0 overflow-x-auto print:break-inside-avoid print:bg-white print:border-none print:shadow-none print:mt-4 print:p-0`}>
             <table className="w-full min-w-[600px] text-[10px] sm:text-xs border-collapse">
               <thead>
                 <tr className="text-[9px] sm:text-[10px] text-slate-400 uppercase tracking-wider">
