@@ -57,17 +57,21 @@ export default function HelpModal({ open, onClose, t }) {
               <li><strong>{t('allocation_option')}:</strong> {t('help_team_alloc')}</li>
               <li><strong>{t('birthday')}:</strong> {t('help_team_birthday')}</li>
             </ul>
+            <p><strong>{t('employment_history')}:</strong> {t('help_team_contract')}</p>
           </Section>
 
           <Section icon={Sun} title={t('help_timeoff_title')}>
             <p>{t('help_timeoff_1')}</p>
             <p>{t('help_timeoff_2')}</p>
+            <p>{t('help_timeoff_events')}</p>
+            <p>{t('help_timeoff_year')}</p>
           </Section>
 
           <Section icon={Calendar} title={t('help_roster_title')}>
             <p>{t('help_roster_1')}</p>
             <p>{t('help_roster_2')}</p>
             <p>{t('help_roster_3')}</p>
+            <p>{t('help_roster_4')}</p>
           </Section>
 
           <Section icon={Zap} title={t('help_auto_title')}>
