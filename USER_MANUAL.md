@@ -1,326 +1,269 @@
-# Team Roster Planner - User Manual
+# Team Roster Planner — User Manual
 
-## Table of Contents
+## Contents
 
-1. [Overview](#overview)
-2. [Navigation](#navigation)
-3. [Managing Roles & Rules](#managing-roles--rules)
-4. [Managing Shifts](#managing-shifts)
-5. [Managing Team Members](#managing-team-members)
-6. [Time Off & Leave Management](#time-off--leave-management)
-7. [Monthly Roster Schedule](#monthly-roster-schedule)
-8. [Auto-Scheduler](#auto-scheduler)
-9. [Export & Data Management](#export--data-management)
-10. [Workflow Example](#workflow-example)
-11. [Troubleshooting](#troubleshooting)
-
----
-
-## Overview
-
-Team Roster Planner is a scheduling application for managing monthly team rosters. It supports shift definitions with per-day staffing targets, role-based assignment rules, automated scheduling, and PDF export. The interface is available in English and German.
-
-All data is automatically saved to your browser's local storage and persists across sessions.
+1. Overview and data storage
+2. Roles & Rules
+3. Managing shifts
+4. Managing team members and contract history
+5. Leaves, holidays, and custom events
+6. Monthly roster
+7. Auto-Scheduler: rules and limitations
+8. PDF export and backups
+9. Suggested setup workflow
+10. Troubleshooting
 
 ---
 
-## Navigation
+## 1. Overview and data storage
 
-The application has 5 main tabs accessible from the top navigation bar:
+Team Roster Planner is a browser-based tool for preparing monthly team rosters. It supports configurable shift times and staffing targets, role-based assignment rules, dated employment-contract history, leave and custom events, manual roster editing, automatic scheduling, and PDF export.
 
-| Tab | Icon | Purpose |
-|-----|------|---------|
-| **Monthly Roster** | Calendar | Core scheduling view |
-| **Manage Team** | Users | Team member administration |
-| **Manage Shifts** | Clock | Shift type definitions |
-| **Roles & Rules** | Shield | Role configuration and assignment rules |
-| **Leaves & Holidays** | Sun | Time off and leave management |
+**Your roster data is stored in the browser's local storage.** It is not automatically synchronized between different browsers or devices. Use **Save Data** regularly to download a JSON backup.
 
-### Top-Right Controls
+The interface is available in English and German.
 
-- **Language Selector**: Switch between English (EN) and German (DE)
-- **Save Data**: Download a JSON backup file of all roster data
-- **Load Data**: Upload a previously saved JSON backup to restore data
+### Main tabs
 
----
+- **Monthly Roster** — view and edit the selected month's schedule.
+- **Manage Team** — add, edit, remove, and reorder team members.
+- **Manage Shifts** — define shift times, colors, and daily staffing targets.
+- **Roles & Rules** — define shift preferences, exclusions, and fixed days off.
+- **Leaves & Holidays** — book absences and manage custom events.
 
-## Managing Roles & Rules
-
-> **Important**: Create roles before adding team members. Members must be assigned a role.
-
-### Creating a Role
-
-1. Go to the **Roles & Rules** tab
-2. Fill in:
-   - **Role Name**: e.g. "Team Leader", "Employee"
-   - **Priority Target**: How shifts are assigned to this role
-     - **Flexible (No Preference)**: Can work any shift
-     - **Mainly (Prioritize a shift)**: Prefers one shift but can work others. A dropdown appears to select the preferred shift
-     - **Only (Exclusive)**: Can only work the selected shift
-   - **Hard Exclusions**: Check shifts this role should **never** be assigned to
-   - **Fixed Days Off**: Check days of the week when this role is always off (e.g. Saturday, Sunday)
-3. Click **Create Role**
-
-### Editing / Deleting
-
-- Click the **pencil** icon to edit a role. If the role name changes, all members with that role are updated automatically.
-- Click the **trash** icon to delete a role.
+The top-right controls include the language selector and the **Save Data** and **Load Data** backup actions.
 
 ---
 
-## Managing Shifts
+## 2. Roles & Rules
 
-### Creating a Shift
+Create roles before adding team members. Every team member must be assigned to a role.
 
-1. Go to the **Manage Shifts** tab
-2. Fill in:
-   - **Shift Name**: e.g. "B", "S1", "ST1"
-   - **Time**: Time range in format `HH:MM - HH:MM` (e.g. `08:00 - 16:00`). Overnight shifts are supported (e.g. `19:00 - 04:00`)
-   - **Color**: Pick a color for visual identification in the roster
-   - **Priority** (1-99, default 10): Lower number = filled first by the auto-scheduler
-   - **Staffing Targets**: Set how many people are needed for each day of the week (0 = shift not active on that day)
-3. Click **Add**
+### Create or edit a role
 
-### Shift Duration
+Set a role name and choose its **Priority Target**:
 
-Net hours are automatically calculated accounting for Swiss labor law break deductions:
+- **Flexible (No Preference)** — the member can be assigned to any shift unless it is excluded.
+- **Mainly (Prioritize a shift)** — the selected shift is preferred, but other shifts remain possible when needed. The preference penalty is removed on days when the preferred shift has no staffing demand.
+- **Only (Exclusive to one shift)** — the member can only be assigned to the selected shift.
 
-| Shift Length | Break Deducted |
-|---|---|
-| > 9 hours | 1 hour |
-| > 7 hours | 45 minutes |
-| > 5.5 hours | 15 minutes |
+You can also configure:
 
-### Editing / Deleting
+- **Hard Exclusions** — shifts that members in this role must never be assigned to.
+- **Fixed Days Off** — weekdays on which members in this role are always unavailable to the auto-scheduler.
 
-- Click the **pencil** icon to edit. Changes apply to all existing assignments.
-- Click the **trash** icon to delete. All assignments using that shift are removed.
+Use the pencil button to edit a role and the trash button to remove it. Renaming a role updates the role name on its team members. Removing a role moves affected members to another remaining role, if one exists.
 
 ---
 
-## Managing Team Members
+## 3. Managing shifts
 
-### Adding a Team Member
+Create each shift with:
 
-1. Go to the **Manage Team** tab
-2. Fill in:
-   - **Full Name** (required)
-   - **Role** (required): Select from existing roles
-   - **Max Days Off** (optional): Maximum rest days allowed per month. The auto-scheduler will force work assignments if a member risks exceeding this limit
-   - **Allocation Option** (optional): Controls how the auto-scheduler assigns shifts within a work stretch
-     - **No Preference**: Default flexible assignment
-     - **Maximize rest between stretches**: Later/longer shifts at the start of a stretch, earlier shifts at the end — maximizes continuous rest hours between work periods
-     - **Consistent shifts**: Same shift type throughout a work stretch (e.g. S1 every day)
-   - **Birthday** (optional): The member gets an automatic day off on their birthday
-3. Click **Add**
+- **Shift Name** — use a clear name such as B, S1, S2, or S3.
+- **Time** — enter the start and end time in `HH:MM - HH:MM` format. Overnight shifts are supported, for example `19:00 - 04:00`.
+- **Color** — used to identify the shift in the roster.
+- **Staffing Targets** — set the number of people required for each weekday. A target of 0 means that the shift is not required on that weekday.
 
-A color is automatically assigned for visual identification.
+The application calculates net shift hours after automatic break deductions:
 
-### Reordering Members
+| Raw shift duration | Deduction |
+|---|---:|
+| More than 5.5 hours | 15 minutes |
+| More than 7 hours | 45 minutes |
+| More than 9 hours | 1 hour |
 
-Use the **up/down arrows** beside each member to change the display order in the roster grid.
+Only one applicable deduction is applied. Overnight shift duration is calculated across midnight.
 
-### Editing / Deleting
+**Shift start times affect the scheduler's coverage choices.** When there are not enough eligible people to cover every active shift, earlier-starting shifts are generally deprioritized so later shifts can be covered. A shift whose name is **S3** receives special priority on Fridays and Saturdays when its staffing target is greater than zero.
 
-- Click the **pencil** icon to edit any field
-- Click the **trash** icon to remove. All assignments for that member are deleted
+Use the pencil button to edit a shift. Use the trash button to delete it; assignments for the deleted shift are also removed, and role preferences or exclusions referring to it are cleaned up.
 
 ---
 
-## Time Off & Leave Management
+## 4. Managing team members and contract history
 
-### Booking Time Off
+### Add a team member
 
-1. Go to the **Leaves & Holidays** tab
-2. Select:
-   - **Team Member**
-   - **Type**: Holiday, Sick Day, or Wish Day
-   - **Start Date** and **End Date**
-3. Click **Book**
+Enter the member's name and select an existing role. The initial employment contract can be selected from the percentage presets or entered as a custom whole-number percentage. Set the date from which that percentage is effective; the default is the current date.
 
-### Conflict Rules
+Optional settings:
 
-- **Holiday**: Only **one person** can be on holiday on any given day. A red error appears if there is a conflict.
-- **Sick Day / Wish Day**: No limit — multiple people can have the same type on the same day.
+- **Max Days Off** — the maximum number of rest days used as the full-time baseline for the month. The scheduler scales the implied work target according to the member's monthly contract percentage.
+- **Shift Allocation** — controls preferred shift patterns within a work stretch:
+  - **Maximize rest between stretches** — prefers later shifts at the start of a work stretch and earlier shifts near its end. The scheduler uses the eligible shifts for that member.
+  - **Consistent shifts** — prefers the same shift throughout a work stretch.
+- **Birthday** — the birthday is treated as a day off by the auto-scheduler.
 
-### Viewing & Removing
+### Edit employment contract history
 
-All booked time off is listed chronologically. Click the **trash** icon to remove an entry.
+Open **Edit Team Member** to maintain the dated contract history. Keep one entry for each contract change:
 
-### How Time Off Appears in the Roster
+1. Enter the date on which the new percentage becomes effective.
+2. Select a preset percentage or type a custom whole number from 1 to 100.
+3. Add another entry for every later contract change.
 
-| Code | Color | Meaning |
-|------|-------|---------|
-| HOL | Orange | Holiday |
-| SICK | Red | Sick day |
-| WSH | Pink | Wish day |
-| B-DAY | Indigo | Birthday |
+Each entry must have a valid, unique effective date. The scheduler applies the percentage that is valid on each calendar day, including when a contract changes during a month.
 
-These days cannot be overwritten by the auto-scheduler.
+The scheduler uses contract-adjusted hours and workdays to balance workloads across different employment percentages. **This is a soft balancing preference, not a hard limit on an individual's shifts or hours.** Staffing requirements and eligibility rules can result in actual hours that differ from the proportional target.
+
+Use the pencil button to edit a member. Use the up/down arrows to change the member's display order. Removing a member also removes that member's shift assignments.
 
 ---
 
-## Monthly Roster Schedule
+## 5. Leaves, holidays, and custom events
 
-### Layout
+### Book an absence
 
-- **Rows**: One per team member (sticky names on the left)
-- **Columns**: One per calendar day
-- **Column headers**: Day number + day of week
-- **Friday/Saturday columns** are highlighted in blue
-- **Shift Legend** at the top shows all shifts with their colors and times
+In **Leaves & Holidays**, select a team member, absence type, start date, and end date, then click **Book**.
 
-### Assigning Shifts Manually
+Available types include:
 
-Click any cell to open the assignment modal. Options include:
+- Holiday
+- Sick day
+- Wish day
+- Unpaid leave
+- Custom events that have been created in the Events section
 
-- **OFF**: Rest day (green)
-- **HOL / SICK / WSH**: Time off types
-- All configured **shifts** (displayed with name and time)
+The date-range booking form prevents more than one person from being booked for a holiday on the same date. Sick days, wish days, unpaid leave, and custom events do not have this one-person restriction.
 
-The currently assigned option is highlighted. Click to change, or click Cancel to close.
+Booked dates are treated as unavailable for shift assignment by the auto-scheduler.
 
-> Cells for birthdays and fixed days off (from role rules) are locked and cannot be clicked.
+### Create custom events
 
-### Coverage Alerts
+Expand the **Events** section to create a custom event. Configure its name, abbreviation (up to five characters), hours, color, and optional explanation. You can also choose whether the event **counts as a workday**.
 
-A row at the bottom of the schedule shows **red warnings** when a day is understaffed. Format: `ShiftName: 1/2` means 1 person assigned but 2 are required.
+When a custom event is assigned to a member on a date, that member is not available for a shift on that date. If the event is marked as counting as a workday, its configured hours and workday count are included in the Monthly Summary. Otherwise, it is shown as an event day but does not add work hours.
 
-### Leave & Events Row
+Editing an event updates its definition. Deleting an event also removes existing bookings that refer to that event.
 
-Below the schedule, a row displays all events per day using member initials and type icons (birthdays, holidays, sick days, wish days). This row is informational and excluded from PDF export.
+### View bookings by year
 
-### Monthly Summary
+The booking list opens on the current calendar year. Use the **Year** selector to view another year that has bookings. A booking spanning New Year's Eve is shown as the relevant part of the date range in each selected year.
 
-Cards at the bottom show per-member statistics:
-
-- **Shifts**: Number of shifts worked
-- **Hours**: Total net hours worked
-- **Rest**: Days off (excluding time off)
-- **Holidays / Sick / Wish**: Count of each leave type
-
-### Month Navigation
-
-- **Left/Right arrows** beside the month name to navigate months
-- **Clear Month**: Red button — removes **all** assignments for the visible month (time off and configuration are preserved)
+Use the trash button beside a booking to remove it.
 
 ---
 
-## Auto-Scheduler
+## 6. Monthly roster
 
-Click the **Auto-Schedule** button (teal) in the toolbar to automatically fill the entire month.
+### Navigate and read the roster
 
-### Rules Applied (in order of priority)
+Use the left and right arrows beside the month name to change the displayed month. Each row represents a team member; each date is a column. The shift legend shows configured shift colors and times.
 
-1. **Pre-existing assignments are preserved** — the scheduler only fills empty cells
-2. **Birthdays, time off, and fixed days off** are always respected
-3. **Hard exclusions** from roles are never violated
-4. **"Only" roles** are exclusively assigned to their designated shift
-5. **11-hour rest** between consecutive shifts is enforced (Swiss labor law)
-6. **Maximum 5 consecutive working days** — after 5 days, a mandatory rest day is given
-7. **Min 2 Days Off** (toggle in toolbar): When enabled, every work stretch is followed by at least 2 consecutive rest days
-8. **Workload balance**: Members who have worked fewer days are preferred, distributing shifts evenly
-9. **Role preferences**: "Mainly" roles are strongly preferred for their designated shift. On days when the preferred shift has no demand (e.g. weekends), the penalty is removed so the member can freely work other shifts
-10. **Staffing targets**: Each shift's per-day requirement is met if enough eligible members are available
-11. **Minimum 2 employees per day**: If fewer than 2 members are available, the 5-consecutive-day rule may be broken (but the 2-days-off rule is never broken)
-12. **Max Days Off**: Members approaching their limit are forced to work remaining days
-13. **Allocation options** control shift selection within work stretches (see Team Members section)
+### Edit a roster cell manually
 
-### Capacity Constraints
+Click an available cell to select:
 
-When there are fewer available members than total shift demand, the scheduler prioritizes:
-1. **Earliest shift** (e.g. morning)
-2. **Latest shift** (e.g. night)
-3. Mid-day shifts last
+- A configured shift
+- Rest day (OFF)
+- Holiday (HOL)
+- Sick day
+- Wish day (WSH)
+- Unpaid leave
+- A configured custom event
 
-### After Auto-Scheduling
+Birthdays and role-based fixed days off are locked.
 
-- Review the **Coverage Alerts** row for any unfilled positions
-- Check the **Monthly Summary** for fair distribution
-- Manually adjust any cells as needed
+Manual changes are saved automatically in the browser.
+
+### Coverage alerts and monthly summary
+
+The **Coverage Alerts** row identifies days and shifts where the assigned number of people is below the staffing target. A warning such as `S1: 1/2` means one person is assigned where two are required.
+
+The **Monthly Summary** shows each member's worked shifts or workdays, net hours, rest days, and absence counts. Custom events marked as workdays contribute their configured hours and workday count.
+
+Use the month notes area below the roster to save notes for the displayed month.
+
+**Clear Month** removes shift assignments for the currently displayed month only. It does not remove time-off bookings, team members, roles, shifts, or other configuration.
 
 ---
 
-## Export & Data Management
+## 7. Auto-Scheduler: rules and limitations
+
+Use **Auto-Schedule** to generate the roster for the displayed month.
+
+> **Important:** Auto-Schedule rebuilds the entire displayed month. Existing shift assignments in that month, including manual shift changes, are replaced. Time-off bookings and configuration remain in place. Review the result before relying on it.
+
+The scheduler uses the following rules and preferences:
+
+1. **Rest between shifts:** it checks for at least 11 hours between consecutive shifts.
+2. **Consecutive working days:** it normally schedules no more than five consecutive working days. When required coverage cannot otherwise be met, a mandatory rest day can be relaxed as a fallback.
+3. **Min 2 Days Off:** when enabled, the scheduler aims for two consecutive rest days between work stretches. Under staffing pressure, the final rest day may be used to fill a required position.
+4. **Role rules:** hard exclusions, Only-role restrictions, and fixed days off are respected. Mainly-role preferences are preferences, not exclusive restrictions.
+5. **Contract-aware workload balance:** the scheduler uses the contract percentage effective on each date to compare contract-adjusted hours and workdays. This is a soft target and does not cap assignments.
+6. **Max Days Off:** the full-time work target implied by this setting is scaled for the member's monthly contract percentage. The scheduler may assign a member to an otherwise unfilled required shift when the limit is at risk; it does not add an extra person to a shift whose target is already met.
+7. **Shift coverage:** the scheduler attempts to meet each shift's staffing target. If there are too few eligible people, some positions can remain unfilled and will appear in Coverage Alerts.
+8. **Capacity priorities:** when there are not enough eligible people for all active shifts, earlier-starting shifts are generally deprioritized so later shifts can be staffed. S3 is moved to the front of the fill order on Fridays and Saturdays when it has a staffing target.
+9. **Work-stretch allocation:** the member's Shift Allocation option influences the preferred shift pattern within a stretch.
+
+The scheduler also considers the end of the previous month when checking a member's consecutive-workday stretch.
+
+### After scheduling
+
+- Review every Coverage Alert.
+- Check workdays and net hours in the Monthly Summary, especially for part-time members.
+- Review weekends and any shifts with role restrictions.
+- Make any necessary manual adjustments.
+- Remember that running Auto-Schedule again replaces the month's shift assignments again.
+
+The scheduler is a planning aid. It cannot fill a position when no eligible member is available.
+
+---
+
+## 8. PDF export and backups
 
 ### Export PDF
 
-Click **Export PDF** in the toolbar to generate a landscape A4 PDF containing:
+Click **Export PDF** to download a landscape A4 PDF for the currently displayed month. It includes the roster and monthly summary.
 
-- Month and year title
-- Shift legend
-- Complete roster table with all assignments
-- Monthly summary statistics
+### Save and load data
 
-The **Leave & Events** and **Coverage Alerts** rows are excluded from the PDF. The file is named `Team_Roster_[Month]_[Year].pdf`.
+- **Save Data** downloads a JSON backup containing team members and their contract history, roles, shifts, assignments, time-off bookings, custom events, scheduler settings, and monthly notes.
+- **Load Data** imports a previously saved JSON backup and restores the data in the application.
 
-### Save / Load Data
-
-- **Save Data** (top-right): Downloads a `TeamRoster_Backup_[YYYY-MM-DD].json` file containing all configuration and schedule data
-- **Load Data** (top-right): Upload a previously saved JSON file to restore everything
-
-### Automatic Persistence
-
-All changes are automatically saved to browser local storage (with a 1-second delay). Data survives browser restarts. However:
-
-- Clearing browser data will erase the roster
-- Private/incognito mode may not persist data
-- Use **Save Data** periodically for backup safety
+All changes are also saved automatically to this browser's local storage. Clearing browser data can erase the roster, and private browsing may not retain it. Keep an external backup.
 
 ---
 
-## Workflow Example
+## 9. Suggested setup workflow
 
-### Setting Up a New Schedule
-
-1. **Create Roles** (Roles & Rules tab)
-   - e.g. "Team Leader": Mainly B shift, excluded from ST1 and S2
-   - e.g. "Employee": Flexible, excluded from B
-
-2. **Create Shifts** (Manage Shifts tab)
-   - e.g. B: 10:00-19:00, priority 10, Mon-Fri: 2, Sat-Sun: 0
-   - e.g. S1: 16:00-01:00, priority 10, daily: 1
-   - Set staffing targets per day of week
-
-3. **Add Team Members** (Manage Team tab)
-   - Assign roles, set max days off (e.g. 10), choose allocation option, enter birthdays
-
-4. **Book Time Off** (Leaves & Holidays tab)
-   - Enter approved holidays, known sick days, wish days
-
-5. **Generate Schedule** (Monthly Roster tab)
-   - Enable **Min 2 Days Off** if desired
-   - Click **Auto-Schedule**
-   - Review coverage alerts and monthly summary
-   - Manually adjust as needed
-
-6. **Export**
-   - Click **Export PDF** for printing/sharing
-   - Click **Save Data** for backup
+1. Create the roles and define their preferences, exclusions, and fixed days off.
+2. Create shifts and set the staffing target for each weekday.
+3. Add team members, assign roles, set contract percentages and effective dates, and enter birthdays and other options.
+4. Create any custom events and book known holidays, absences, and events.
+5. Open the required month, set **Min 2 Days Off** as needed, and click **Auto-Schedule**.
+6. Review coverage warnings and the monthly summary. Make manual corrections if required.
+7. Export a PDF and save a JSON backup.
 
 ---
 
-## Troubleshooting
+## 10. Troubleshooting
 
-### "Add Roles First" when adding members
-You must create at least one role before adding team members. Go to the Roles & Rules tab first.
+### A shift remains unfilled
 
-### Auto-scheduler leaves shifts unfilled
-- Check that staffing targets aren't set higher than available staff
-- Verify role exclusions aren't blocking all eligible members from a shift
-- Ensure the min-2-days-off toggle isn't over-constraining the schedule
-- Check if too many members have time off on the same day
+Check the staffing target, role exclusions, Only-role restrictions, 11-hour rest requirement, fixed days off, birthdays, and booked absences. If there are not enough eligible people, the scheduler cannot fill every position; review Coverage Alerts.
 
-### Holiday booking shows a conflict error
-Only one person can be on holiday on any given day. Check who is already booked and adjust dates. Sick days and wish days have no such limit.
+### Running Auto-Schedule changed my manual assignments
 
-### Coverage alerts showing after auto-schedule
-This indicates demand exceeds supply for that day. Common causes:
-- More shift positions than team members (e.g. 5 positions but only 4 people)
-- Too many members on mandatory rest simultaneously
-- Role exclusions limiting who can fill certain shifts
+This is expected. Auto-Schedule rebuilds the entire displayed month and replaces its shift assignments. Apply manual changes after the final auto-schedule run.
 
-### Data appears lost
-- Browser data clearing removes local storage. Always use **Save Data** for backups
-- Private/incognito windows may not persist storage
-- Use **Load Data** to restore from a backup file
+### A part-time member has more or fewer hours than expected
+
+Contract-aware balancing is a soft preference, not a guaranteed hour cap. Actual coverage needs and the number of shifts each member is eligible to work can affect the result. Check the contract history and effective dates for the month.
+
+### The scheduler uses the wrong contract percentage
+
+Open **Edit Team Member** and check that every contract change has the correct effective date and percentage. Each effective date must be unique.
+
+### Holiday booking reports a conflict
+
+The date-range booking form allows only one holiday booking per date. Check the booking list for the person already booked on the overlapping date.
+
+### I cannot see an older booking
+
+Use the Year selector in **Leaves & Holidays**. The list initially displays the current year and offers other years in which bookings exist.
+
+### Data appears to be missing
+
+Data is stored in the browser's local storage. Check that you are using the same browser and browser profile. Restore a recent JSON backup with **Load Data** if necessary.
